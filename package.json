@@ -1,0 +1,23 @@
+{
+  "name": "task-management-api",
+  "version": "1.0.0",
+  "description": "Cloud-native task management REST API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "google-cloud",
+    "cloud-run",
+    "firestore"
+  ],
+  "author": "Vishal Moothoo",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google-cloud/firestore": "^9.0.0",
+    "express": "^5.2.1"
+  }
+}
