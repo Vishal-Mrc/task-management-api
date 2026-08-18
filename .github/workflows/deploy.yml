@@ -1,0 +1,53 @@
+name: Deploy Task Management API
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: gcptraining2121ttt
+  REGION: us-central1
+  REPOSITORY: task-api-repo
+  SERVICE: task-management-api
+  IMAGE: us-central1-docker.pkg.dev/gcptraining2121ttt/task-api-repo/task-management-api
+  RUNTIME_SERVICE_ACCOUNT: task-api-runtime@gcptraining2121ttt.iam.gserviceaccount.com
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/783181616350/locations/global/workloadIdentityPools/github-pool/providers/task-api-provider
+          service_account: github-actions-deployer@gcptraining2121ttt.iam.gserviceaccount.com
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE:${{ github.sha }} .
+
+      - name: Push Docker image
+        run: docker push $IMAGE:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE \
+            --image=$IMAGE:${{ github.sha }} \
+            --region=$REGION \
+            --platform=managed \
+            --allow-unauthenticated \
+            --service-account=$RUNTIME_SERVICE_ACCOUNT
