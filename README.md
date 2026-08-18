@@ -1,41 +1,654 @@
 # Task Management API
 
-A cloud-native REST API built with Node.js, Express and Google Cloud Firestore.
+A cloud-native REST API built with **Node.js, Express and Google Cloud Firestore**, containerized with Docker and deployed to Google Cloud Run.
 
-## Architecture
+The project demonstrates a complete cloud application lifecycle:
 
-Client
-↓
-Google Cloud Run
-↓
-Node.js + Express
-↓
-Cloud Firestore
+**Application → Database → Container → Cloud → CI/CD → IAM → Terraform → Monitoring**
 
-## Technologies
+---
 
-- Node.js
-- Express
-- Docker
-- Google Cloud Run
-- Google Artifact Registry
-- Google Cloud Firestore
-- GitHub Actions
-- Terraform
+## 🚀 Live API
 
-## API Endpoints
+**Cloud Run:**
+https://task-management-api-783181616350.us-central1.run.app
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/health` | Health check |
-| GET | `/tasks` | Get all tasks |
-| GET | `/tasks/:id` | Get one task |
-| POST | `/tasks` | Create task |
-| PUT | `/tasks/:id` | Update task |
-| DELETE | `/tasks/:id` | Delete task |
+### Health Check
 
-## Local Development
+```text
+GET /health
+```
+
+Example:
+
+```powershell
+Invoke-RestMethod "https://task-management-api-783181616350.us-central1.run.app/health"
+```
+
+Response:
+
+```json
+{
+  "status": "healthy",
+  "service": "task-management-api",
+  "version": "2.0"
+}
+```
+
+---
+
+# 🏗️ Architecture
+
+## Application Architecture
+
+```text
+                    Client
+                 /   Browser
+                /    Postman
+               /
+              ▼
+       ┌─────────────────┐
+       │    Cloud Run    │
+       │ Node.js/Express │
+       └────────┬────────┘
+                │
+                ▼
+       ┌─────────────────┐
+       │    Firestore    │
+       │     tasks       │
+       └─────────────────┘
+```
+
+## CI/CD Architecture
+
+```text
+Developer
+    │
+    │ git push
+    ▼
+ GitHub
+    │
+    ▼
+GitHub Actions
+    │
+    ├── Authenticate with GCP
+    │       │
+    │       └── Workload Identity Federation
+    │
+    ├── Build Docker image
+    │
+    ├── Push image
+    ▼
+Artifact Registry
+    │
+    ▼
+Cloud Run
+    │
+    ▼
+New application revision
+```
+
+## Infrastructure Architecture
+
+```text
+Terraform
+   │
+   ├── Artifact Registry
+   ├── Firestore
+   ├── Cloud Run
+   ├── Runtime Service Account
+   └── IAM
+```
+
+---
+
+# 🧰 Technologies
+
+### Application
+
+* Node.js
+* Express
+* REST API
+* JavaScript
+
+### Google Cloud
+
+* Google Cloud Run
+* Cloud Firestore
+* Artifact Registry
+* Cloud Monitoring
+* IAM
+
+### DevOps
+
+* Docker
+* Git
+* GitHub
+* GitHub Actions
+* Workload Identity Federation
+* Terraform
+
+---
+
+# 📡 API Endpoints
+
+| Method | Endpoint     | Description               |
+| ------ | ------------ | ------------------------- |
+| GET    | `/health`    | Returns API health status |
+| GET    | `/tasks`     | Returns all tasks         |
+| GET    | `/tasks/:id` | Returns a specific task   |
+| POST   | `/tasks`     | Creates a new task        |
+| PUT    | `/tasks/:id` | Updates an existing task  |
+| DELETE | `/tasks/:id` | Deletes a task            |
+
+---
+
+# 📝 Task Data Model
+
+Tasks are stored in the Firestore `tasks` collection.
+
+Example document:
+
+```json
+{
+  "title": "Learn Firestore",
+  "description": "Connect the API to Firestore",
+  "status": "pending",
+  "createdAt": "2026-08-18T10:20:15.138Z",
+  "updatedAt": "2026-08-18T10:20:15.138Z"
+}
+```
+
+Each Firestore document receives a unique document ID.
+
+---
+
+# 💻 Local Development
+
+## Prerequisites
+
+You need:
+
+* Node.js
+* npm
+* Docker
+* Google Cloud CLI
+* A Google Cloud project with Firestore enabled
+
+## Install dependencies
 
 ```bash
 npm install
+```
+
+## Start the API
+
+```bash
 npm start
+```
+
+The API runs on:
+
+```text
+http://localhost:8080
+```
+
+Test the health endpoint:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/health"
+```
+
+---
+
+# 🧪 Testing the API
+
+## Create a task
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8080/tasks" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"title":"Learn Docker","description":"Containerize the API"}'
+```
+
+## Get all tasks
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8080/tasks" `
+  -Method Get
+```
+
+## Get one task
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8080/tasks/TASK_ID" `
+  -Method Get
+```
+
+## Update a task
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8080/tasks/TASK_ID" `
+  -Method Put `
+  -ContentType "application/json" `
+  -Body '{"status":"completed"}'
+```
+
+## Delete a task
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8080/tasks/TASK_ID" `
+  -Method Delete
+```
+
+---
+
+# 🐳 Docker
+
+The application is containerized using a lightweight Node.js Alpine image.
+
+## Build the image
+
+```bash
+docker build -t task-management-api:v1 .
+```
+
+## Run locally
+
+```bash
+docker run --rm -p 8080:8080 task-management-api:v1
+```
+
+The API will then be available at:
+
+```text
+http://localhost:8080
+```
+
+The container listens on port `8080`, matching the port expected by Cloud Run.
+
+---
+
+# 📦 Artifact Registry
+
+The Docker image is stored in:
+
+```text
+us-central1-docker.pkg.dev/gcptraining2121ttt/task-api-repo/task-management-api
+```
+
+Images are tagged using version identifiers generated by the CI/CD pipeline.
+
+---
+
+# ☁️ Cloud Run
+
+The API is deployed to:
+
+```text
+Project: gcptraining2121ttt
+Region: us-central1
+Service: task-management-api
+```
+
+Cloud Run provides the public HTTPS endpoint and automatically manages application instances.
+
+The application runs using the dedicated runtime service account:
+
+```text
+task-api-runtime@gcptraining2121ttt.iam.gserviceaccount.com
+```
+
+---
+
+# 🔐 IAM & Security
+
+The application uses a dedicated runtime service account:
+
+```text
+task-api-runtime
+```
+
+This account has:
+
+```text
+roles/datastore.user
+```
+
+which allows the API to interact with Firestore.
+
+GitHub Actions uses a separate deployment identity:
+
+```text
+github-actions-deployer
+```
+
+Application runtime permissions and deployment permissions are intentionally separated.
+
+### Workload Identity Federation
+
+GitHub Actions authenticates to Google Cloud using **Workload Identity Federation** instead of storing a long-lived Google service-account JSON key in GitHub.
+
+The authentication flow is:
+
+```text
+GitHub Actions
+      │
+      ▼
+GitHub OIDC
+      │
+      ▼
+Workload Identity Federation
+      │
+      ▼
+github-actions-deployer
+      │
+      ▼
+Google Cloud
+```
+
+This avoids storing long-lived Google Cloud credentials in the repository.
+
+---
+
+# 🔄 CI/CD
+
+GitHub Actions automatically deploys changes pushed to the `main` branch.
+
+The workflow performs:
+
+```text
+Git Push
+   ↓
+GitHub Actions
+   ↓
+Authenticate to Google Cloud
+   ↓
+Configure Docker
+   ↓
+Build Docker image
+   ↓
+Push image to Artifact Registry
+   ↓
+Deploy new Cloud Run revision
+```
+
+The Docker image is tagged using the Git commit SHA, allowing deployments to be traced back to a specific source revision.
+
+### Example
+
+```text
+cloud-portfolio:<git-sha>
+```
+
+or for this API:
+
+```text
+task-management-api:<git-sha>
+```
+
+This provides version traceability between GitHub commits, Docker images and Cloud Run revisions.
+
+---
+
+# 🏗️ Infrastructure as Code
+
+Terraform is used to manage the core Google Cloud infrastructure.
+
+Terraform currently manages:
+
+* Artifact Registry repository
+* Firestore database
+* Cloud Run service
+* Task API runtime service account
+* Firestore IAM permission
+
+The Terraform configuration is located in:
+
+```text
+terraform/
+├── main.tf
+└── .terraform.lock.hcl
+```
+
+### Terraform workflow
+
+```bash
+terraform init
+terraform validate
+terraform plan
+```
+
+The existing resources were imported into Terraform rather than recreated.
+
+The infrastructure was verified with:
+
+```text
+No changes.
+Your infrastructure matches the configuration.
+```
+
+### Responsibility separation
+
+Terraform manages the **infrastructure**, while GitHub Actions manages the **application container deployment**.
+
+```text
+Terraform
+   ↓
+Infrastructure
+
+GitHub Actions
+   ↓
+Application image + deployment
+```
+
+This prevents Terraform and CI/CD from fighting over the active container image.
+
+---
+
+# 📊 Monitoring
+
+Google Cloud Monitoring is used to observe the API.
+
+The project includes monitoring for:
+
+* Request count
+* Request latency
+* Cloud Run instance activity
+* API availability
+
+An uptime check monitors:
+
+```text
+/health
+```
+
+The endpoint is expected to return:
+
+```text
+HTTP 200
+```
+
+An alert policy is configured to detect availability problems.
+
+### Monitoring architecture
+
+```text
+             Cloud Run
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+     Metrics          /health
+        │                 │
+        ▼                 ▼
+ Monitoring          Uptime Check
+ Dashboard               │
+                         ▼
+                     Alert Policy
+```
+
+---
+
+# 🧪 Deployment Verification
+
+The deployed application was tested using:
+
+### Health check
+
+```text
+GET /health
+```
+
+### Create task
+
+```text
+POST /tasks
+```
+
+### Read tasks
+
+```text
+GET /tasks
+```
+
+### Update task
+
+```text
+PUT /tasks/:id
+```
+
+### Delete task
+
+```text
+DELETE /tasks/:id
+```
+
+The tests confirmed that data could be created, retrieved, updated and deleted from the production Cloud Run service through Firestore.
+
+---
+
+# 🛠️ Troubleshooting & Lessons Learned
+
+## Cloud Run Port Configuration
+
+The API is configured to use:
+
+```text
+PORT=8080
+```
+
+Cloud Run requires the container to listen on the port supplied by the `PORT` environment variable.
+
+The Dockerfile exposes port `8080` and the Express application uses:
+
+```javascript
+const PORT = process.env.PORT || 8080;
+```
+
+## Application Credentials
+
+Local development uses Google Application Default Credentials.
+
+Production does **not** store Google credentials inside the Docker image.
+
+Instead, Cloud Run uses:
+
+```text
+task-api-runtime
+```
+
+with the required Firestore IAM permission.
+
+## CI/CD Authentication
+
+GitHub Actions authenticates using Workload Identity Federation instead of a long-lived service-account key.
+
+This keeps the deployment pipeline more secure and avoids storing private Google Cloud credentials in GitHub.
+
+---
+
+# 📁 Project Structure
+
+```text
+task-management-api/
+│
+├── .github/
+│   └── workflows/
+│       └── deploy.yml
+│
+├── terraform/
+│   ├── main.tf
+│   └── .terraform.lock.hcl
+│
+├── .dockerignore
+├── .gitignore
+├── Dockerfile
+├── index.js
+├── package.json
+├── package-lock.json
+└── README.md
+```
+
+---
+
+# 🚧 Future Improvements
+
+Planned improvements include:
+
+* Add automated unit tests
+* Add API request validation
+* Add authentication for API users
+* Add API documentation with OpenAPI/Swagger
+* Add structured logging
+* Add more detailed monitoring dashboards
+* Add automated testing to the GitHub Actions pipeline
+* Add staging and production environments
+* Add alert notifications
+* Improve Firestore data validation
+
+---
+
+# 🎯 Project Status
+
+| Component                    | Status                |
+| ---------------------------- | --------------------- |
+| Node.js + Express            | ✅ Complete            |
+| REST API                     | ✅ Complete            |
+| Firestore                    | ✅ Complete            |
+| CRUD operations              | ✅ Complete            |
+| Docker                       | ✅ Complete            |
+| Artifact Registry            | ✅ Complete            |
+| Cloud Run                    | ✅ Complete            |
+| IAM                          | ✅ Complete            |
+| Workload Identity Federation | ✅ Complete            |
+| GitHub                       | ✅ Complete            |
+| GitHub Actions CI/CD         | ✅ Complete            |
+| Terraform                    | ✅ Complete            |
+| Cloud Monitoring             | ✅ Complete            |
+| Uptime monitoring            | ✅ Complete            |
+| Automated tests              | 🚧 Future improvement |
+| API authentication           | 🚧 Future improvement |
+
+---
+
+## 🌐 Live Project
+
+**API:**
+https://task-management-api-783181616350.us-central1.run.app
+
+**GitHub:**
+https://github.com/Vishal-Mrc/task-management-api
+
+---
+
+## About This Project
+
+This project was built as part of a personal Cloud/DevOps portfolio to demonstrate practical experience with Google Cloud, containerization, Infrastructure as Code, CI/CD, IAM and application monitoring.
+
+The focus was not only on deploying the application, but on understanding how the different cloud services work together to create a repeatable and maintainable deployment process.
