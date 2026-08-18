@@ -13,7 +13,9 @@ app.use(express.json());
 // Health check
 app.get("/health", (req, res) => {
     res.status(200).json({
-        status: "healthy"
+        status: "healthy",
+        service: "task-management-api",
+        version: "2.0"
     });
 });
 
